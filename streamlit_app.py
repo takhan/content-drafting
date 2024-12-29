@@ -27,14 +27,20 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
     df = pd.read_excel(uploaded_file, skiprows=1)
     filtered_df = df[(df['CHANNEL/TACTIC'] == 'Email') & (df['COMMUNICATION'].notna())]
-    print(filtered_df['KEY COPY POINTS'])
-# Ask the user for a question via `st.text_area`.
-question = st.text_area(
-    "Now ask a question about the document!",
-    placeholder="Can you give me a short summary?",
-    disabled=not uploaded_file,
-)
+    #print(filtered_df['KEY COPY POINTS'])
 
+    option = st.selectbox("Which email do you want to generate?", filtered_df['COMMUNICATION'])
+    if option is not None:
+        value = filtered_df.loc[filtered_df['COMMUNICATION'] == option].iloc[0]['KEY COPY POINTS']
+        print(value)
+        # Ask the user to edit the email description via `st.text_area`.
+        question = st.text_area(
+            "Now ask a question about the document!",
+            value=value,
+            placeholder="Can you give me a short summary?",
+            disabled=not uploaded_file,
+        )
+question = None
 if uploaded_file and question:
 
     # Process the uploaded file and question.
