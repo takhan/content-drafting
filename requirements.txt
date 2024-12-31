@@ -2,3 +2,9 @@ streamlit
 openai
 pandas
 openpyxl
+streamlit-chromadb-connection
+pysqlite3-binary
+s3fs
+st-files-connection
+boto3
+docx2txt
