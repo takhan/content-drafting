@@ -15,6 +15,12 @@ import docx2txt
 if 'email_data' not in st.session_state:
     st.session_state.email_data = None
 
+if 'collection_name' not in st.session_state:
+    st.session_state.collection_name = "email_collection"
+
+if 'chroma_client' not in st.session_state:
+    st.session_state.chroma_client = chromadb.PersistentClient('./chromaclient/')
+
 #strip non body text from emails
 def strip_emails(emails, openai_api_key):
     # Create an OpenAI client.
@@ -78,6 +84,15 @@ def vectorize(emails):
     ids=ids
     )
     print("Vector DB Created")
+
+def find_docs(search_string):
+    collection = st.session_state.chroma_client.get_collection(name=st.session_state.collection_name)
+    results = collection.query(
+    query_texts=[search_string], # Chroma will embed this for you
+    n_results=1 # how many results to return
+    )
+    print(results)
+    return results['documents'][0][0]
 
 # Create S3 client
 s3 = boto3.client(
@@ -153,3 +168,5 @@ if uploaded_file is not None:
             placeholder="Can you give me a short summary?",
             disabled=not uploaded_file,
         )
+        sample_email = find_docs(value)
+        st.write(sample_email)
