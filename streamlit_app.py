@@ -6,10 +6,14 @@ __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 from streamlit_chromadb_connection.chromadb_connection import ChromadbConnection
+import chromadb
 import boto3
 from io import BytesIO
 from dotenv import load_dotenv
 import docx2txt
+
+if 'email_data' not in st.session_state:
+    st.session_state.email_data = None
 
 #strip non body text from emails
 def strip_emails(emails, openai_api_key):
@@ -32,7 +36,7 @@ def strip_emails(emails, openai_api_key):
         body_text_list.append(body_text)
     return body_text_list
 
-def vectorize(emails):
+def st_vectorize(emails):
     #Add body text of emails to vector db
     #collection = chroma_client.create_collection(name="test_collection")
     configuration = {
@@ -44,18 +48,36 @@ def vectorize(emails):
                         type=ChromadbConnection,
                         **configuration)
     conn.create_collection(
-        collection_name=collection_name
+        collection_name=collection_name,
+        embedding_function_name= "DefaultEmbeddingFunction"
     )
     ids = []
     i=0
     for email in emails:
         ids.append("id"+str(i))
         i+=1
-        conn.upload_documents(
-            collection_name=collection_name,
-            documents = emails,
-            ids=ids
-        )
+    conn.upload_documents(
+        collection_name=collection_name,
+        documents = emails,
+        ids=ids
+    )
+    print("Vector DB Created")
+
+def vectorize(emails):
+    #Add body text of emails to vector db
+    chroma_client = chromadb.PersistentClient('./chromaclient/')
+    collection_name = "email_collection"
+    collection = chroma_client.create_collection(name=collection_name)
+    ids = []
+    i=0
+    for email in emails:
+        ids.append("id"+str(i))
+        i+=1
+    collection.add(
+    documents = emails,
+    ids=ids
+    )
+    print("Vector DB Created")
 
 # Create S3 client
 s3 = boto3.client(
@@ -66,10 +88,9 @@ s3 = boto3.client(
 
 
 # Show title and description.
-st.title("📄 Document question answering")
+st.title("📄 Email Drafting")
 st.write(
-    "Upload a document below and ask a question about it – GPT will answer! "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
+    "Upload a tactical communications plan below and pick which email from the plan you would like to draft! "
 )
 
 # Ask user for their OpenAI API key via `st.text_input`.
@@ -96,6 +117,13 @@ if st.button("Get Data"):
             print(text)
             emails.append(text)
         body_text = strip_emails(emails, openai_api_key)
+        st.session_state.email_data = body_text
+        print("Session State Set!")
+
+if st.button("Create Vector DB"):
+    if st.session_state.email_data is not None:
+        vectorize(st.session_state.email_data)
+
 #if not openai_api_key:
     #st.info("Please add your OpenAI API key to continue.", icon="🗝️")
 #else:
@@ -108,6 +136,7 @@ client = OpenAI(api_key=openai_api_key)
 uploaded_file = st.file_uploader(
     "Upload a document"
 )
+
 if uploaded_file is not None:
     df = pd.read_excel(uploaded_file, skiprows=1)
     filtered_df = df[(df['CHANNEL/TACTIC'] == 'Email') & (df['COMMUNICATION'].notna())]
@@ -124,24 +153,3 @@ if uploaded_file is not None:
             placeholder="Can you give me a short summary?",
             disabled=not uploaded_file,
         )
-question = None
-if uploaded_file and question:
-
-    # Process the uploaded file and question.
-    document = uploaded_file.read().decode()
-    messages = [
-        {
-            "role": "user",
-            "content": f"Here's a document: {document} \n\n---\n\n {question}",
-        }
-    ]
-
-    # Generate an answer using the OpenAI API.
-    #stream = client.chat.completions.create(
-        #model="gpt-4o",
-        #messages=messages,
-        #stream=True,
-    #)
-
-    # Stream the response to the app using `st.write_stream`.
-    #st.write_stream(stream)
