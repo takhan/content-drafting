@@ -24,6 +24,9 @@ if 'chroma_client' not in st.session_state:
 if 'openai_api_key' not in st.session_state:
     st.session_state.openai_api_key = os.getenv("OPENAI_KEY")
 
+if 'email_draft' not in st.session_state:
+    st.session_state.email_draft = None
+
 #strip non body text from emails
 def strip_emails(emails):
     # Create an OpenAI client.
@@ -131,7 +134,7 @@ def draft_email(email_string, context):
     )
     tone = response.choices[0].message.content
     print(tone)
-    prompt = f"You are a communications consultant working for a bank called BMO that has recently acquired Bank of the West. Draft the body of an email the bank is sending to its customers using the provided key copy points, details to include, and tone. The details to include and tone information come from a previous email about a similar subject, while the key copy points are specific to this project. The information in the key copy points should take precedence. Do not include any salutations, only draft the body of the email. \n Key Copy Points: {context}.\n Details to Include: {key_details}\n Tone to Use: {tone}"
+    prompt = f"You are a communications consultant working for a bank called BMO that has recently acquired Bank of the West. Draft the body of an email the bank is sending to its customers using the provided key copy points, details to include, and tone. The details to include and tone information come from a previous email about a similar subject, while the key copy points are specific to this project. The information in the key copy points should take precedence. Leave any specific dates as blanks for the sender to fill in. Do not include any salutations, only draft the body of the email. \n Key Copy Points: {context}.\n Details to Include: {key_details}\n Tone to Use: {tone}"
     messages=[
     {"role": "developer", "content": prompt}
     ]
@@ -210,4 +213,9 @@ if uploaded_file is not None:
         sample_email = find_docs(value)
         if st.button("Draft Email"):
             draft = draft_email(sample_email, value)
-            st.write(draft)
+            st.session_state.email_draft = draft
+            st.text_area(
+                "Draft Email",
+                value = draft,
+                disabled=not st.session_state.email_draft
+            )
