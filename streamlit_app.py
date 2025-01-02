@@ -134,7 +134,7 @@ def draft_email(email_string, context):
     )
     tone = response.choices[0].message.content
     print(tone)
-    prompt = f"You are a communications consultant working for a bank called BMO that has recently acquired Bank of the West. Draft the body of an email the bank is sending to its customers using the provided key copy points, details to include, and tone. The details to include and tone information come from a previous email about a similar subject, while the key copy points are specific to this project. The information in the key copy points should take precedence. Leave any specific dates as blanks for the sender to fill in. Do not include any salutations, only draft the body of the email. \n Key Copy Points: {context}.\n Details to Include: {key_details}\n Tone to Use: {tone}"
+    prompt = f"You are a communications consultant working for a bank called BMO that has recently acquired Bank of the West. Draft the body of an email the bank is sending to its customers using the provided key copy points, details to include, and tone. The details to include and tone information come from a previous email about a similar subject, while the key copy points are specific to this project. The information in the key copy points should take precedence. Do not use specific dates in the draft, instead leave them as blanks for the sender to fill in. Do not include any salutations, only draft the body of the email. \n Key Copy Points: {context}.\n Details to Include: {key_details}\n Tone to Use: {tone}"
     messages=[
     {"role": "developer", "content": prompt}
     ]
